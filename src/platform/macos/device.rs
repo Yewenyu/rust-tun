@@ -40,6 +40,20 @@ pub struct Device {
 impl Device {
     /// Create a new `Device` for the given `Configuration`.
     pub fn new(config: &Configuration) -> Result<Self> {
+
+        if let Some(fd) = config.raw_fd {
+            let device =  {
+                let tun = Fd::new(fd).map_err(|_| io::Error::last_os_error())?;
+    
+                Device {
+                    queue: Queue { tun: tun },
+                    name: "tun".to_string(),
+                    ctl: Fd::new(fd).unwrap(),
+                }
+            };
+            return Ok(device)
+        }
+        
         let id = if let Some(name) = config.name.as_ref() {
             if name.len() > IFNAMSIZ {
                 return Err(Error::NameTooLong);
